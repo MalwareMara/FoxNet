@@ -4,15 +4,18 @@
 #include <SD.h>
 #include <SPI.h>
 
+// Configuration variables
+int networkConfiguration = 2; //1 is wifi client, 2 is wifi AP and 4 is ESP-NOW
+
 // WiFi credentials
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
-// SD card CS pin
-#define CS_PIN 5
-
 // Web server on port 80
 WebServer server(80);
+
+// SD card CS pin
+#define CS_PIN 5
 
 // Function to guess MIME type
 String getContentType(String filename) {
@@ -54,23 +57,38 @@ void handleNotFound() {
 void setup() {
   Serial.begin(115200);
 
+  // Check config wifi as a client if appropriate
+  if (networkConfiguration == 1 || networkConfiguration == 3 || networkConfiguration == 5 || networkConfiguration == 7){
+    WiFi.begin(ssid, password);
+   Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+     Serial.print(".");
+    }
+   Serial.println(" connected!");
+   Serial.print("IP Address: ");
+   Serial.println(WiFi.localIP());
+  }
+
+  // Check config WiFi AP if appropriate
+  if (networkConfiguration == 2 || networkConfiguration == 3 || networkConfiguration == 6 || networkConfiguration == 7){
+    WiFi.softAP(ssid, password);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
+  }
+
+  // Check config ESP-NOW if appropriate
+  if (networkConfiguration == 4 || networkConfiguration == 5 || networkConfiguration == 6 || networkConfiguration == 7){
+    // enable ESP-NOW code goes here
+  }
+  
   // Init SD card
   if (!SD.begin(CS_PIN)) {
     Serial.println("SD Card Mount Failed!");
     return;
   }
   Serial.println("SD card initialized.");
-
-  // Connect WiFi
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println(" connected!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
 
   // Route all requests to SD handler
   server.onNotFound(handleNotFound);
